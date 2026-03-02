@@ -25,7 +25,7 @@ def clean(Fname):
     # เงื่อนไข 2: ตัดคำที่ไม่ใช่ชื่อเมนู
     Nname = re.split(r'วิธีทำ|สูตร|แป้ง|สำหรับ|ง่ายๆ|ทำเอง', Fname)[0].strip()
 
-    # เงื่อนไข 3: ลบ Topping เพื่อเช็คความซ้ำซ้อน (เช่น กะเพราไข่ดาว -> กะเพรา)
+    # เงื่อนไข 3: ลบ Topping เพื่อเช็คความซ้ำซ้อน
     for Top in Topp:
         Nname = Nname.replace(Top, "").strip()
 
@@ -86,7 +86,6 @@ def Recipe(menu_link):
         resM = requests.get(menu_link, headers=settingM, timeout=10)
         soupM = BeautifulSoup(resM.content, 'html.parser')
 
-        # แก้ไขจุดนี้: เปลี่ยนจาก ซุป เป็น soupM
         Fname = soupM.find('h1').text.strip() if soupM.find('h1') else ""
         nameM, is_duplicate = clean(Fname)
         
@@ -103,11 +102,28 @@ def Recipe(menu_link):
 
         steps = [s.text.strip() for s in soupM.find_all('div', class_=re.compile('step-description|css-'))]
 
+        # ---------------------------------------------------------------------
+        #  เพิ่มการดึงรูปลิงก์รูปภาพ
+        # ---------------------------------------------------------------------
+        image_url = ""
+        # ค้นหาแท็ก <meta property="og:image"> ซึ่งมักจะเป็นรูปหน้าปกหลักของสูตร
+        meta_image = soupM.find('meta', property='og:image')
+        
+        if meta_image and meta_image.get('content'):
+            image_url = meta_image['content']
+        else:
+            # แผนสำรอง: ค้นหาจากแท็ก img ที่มีคลาสเกี่ยวข้องกับรูปหน้าปก
+            img_tag = soupM.find('img', class_=re.compile('cover|recipe', re.IGNORECASE))
+            if img_tag and img_tag.get('src'):
+                image_url = img_tag['src']
+        # ---------------------------------------------------------------------
+
         return {
             'Menu': nameM,
             'Main Ingredients': ", ".join(ingre),
             'Seasonings': ", ".join(seas),
-            'Step': " | ".join(steps)
+            'Step': " | ".join(steps),
+            'Image_URL': image_url  # เพิ่มคอลัมน์รูปลงไปในดิกชันนารี
         }
     except Exception as e:
         return None
@@ -130,10 +146,10 @@ if __name__ == "__main__":
             print(f"[{i+1}] บันทึกแล้ว: {data['Menu']}")
         time.sleep(1) # ป้องกันการโดนบล็อก
 
-    # บันทึกเป็น CSV
+    # เพิ่ม 'Image_URL' ลงใน fieldnames เพื่อให้บันทึกลง CSV
     with open('wongnai_clean_data.csv', 'w', encoding='utf-8-sig', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['Menu', 'Main Ingredients', 'Seasonings', 'Step'])
+        writer = csv.DictWriter(f, fieldnames=['Menu', 'Main Ingredients', 'Seasonings', 'Step', 'Image_URL'])
         writer.writeheader()
         writer.writerows(final_results)
 
-    print("\n✅ เสร็จสิ้น! บันทึกข้อมูลลงไฟล์ wongnai_clean_data.csv เรียบร้อยแล้ว")
+    print(f"\n✅ เสร็จสิ้น! บันทึกข้อมูล {len(final_results)} รายการ พร้อมลิงก์รูปภาพ ลงไฟล์ wongnai_clean_data.csv เรียบร้อยแล้ว")
