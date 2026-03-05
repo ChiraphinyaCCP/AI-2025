@@ -38,7 +38,7 @@ if 'nav_origin' not in st.session_state:
     st.session_state.nav_origin = None 
 
 # ==========================================
-# ส่วนที่ 1 & 4: หน้าแสดงรายละเอียดสูตรอาหาร (Detail Page)
+# ส่วนที่ 1 : หน้าแสดงรายละเอียดสูตรอาหาร (Detail Page)
 # ==========================================
 if st.session_state.selected_recipe is not None:
     recipe = st.session_state.selected_recipe
@@ -85,7 +85,7 @@ if st.session_state.selected_recipe is not None:
 
     st.divider()
     
-    # --- ส่วนที่แก้ไข: ขั้นตอนการทำแยกบรรทัดใหม่ ---
+    # --- ส่วนที่แยกขั้นตอนการทำแยกบรรทัดใหม่ ---
     st.subheader("🍳 ขั้นตอนการทำ")
     if pd.notna(recipe['Step']):
         step_list = [s.strip() for s in recipe['Step'].replace('|', ',').split(',') if s.strip()]
@@ -99,9 +99,9 @@ if st.session_state.selected_recipe is not None:
 # ==========================================
 else:
     st.sidebar.title("🍱 Cooking Time!")
-    page = st.sidebar.radio("เลือกโหมด:", ["🔍 ค้นหาสูตรทั่วไป", "⚖️ วิเคราะห์ส่วนบุคคล"])
+    page = st.sidebar.radio("เลือกโหมด:", ["🔍 เมนูจากวัตถุดิบที่มี", "🔍 แนะนำเมนูสำหรับคุณ"])
 
-    if page == "🔍 ค้นหาสูตรทั่วไป":
+    if page == "🔍 เมนูจากวัตถุดิบที่มี":
         st.title("🍳 Cooking Time!")
         col_s, col_t = st.columns([2, 1])
         with col_s: selected = st.multiselect("🥕 เลือกวัตถุดิบที่คุณมี:", ingredient_list)
@@ -118,13 +118,13 @@ else:
                 with st.container(border=True):
                     st.image(row['ImURL'] if pd.notna(row['ImURL']) else "https://via.placeholder.com/400x250", use_container_width=True)
                     st.subheader(row['Menu'])
-                    st.write(f"📍 {row['Meth']} | {row['Cal']:.0f} kcal")
+                    st.write(f"📍 {row['Meth']} | 🔥{row['Cal']:.0f} kcal")
                     if st.button("📖 ดูสูตร", key=f"g_{row['Menu']}"):
                         st.session_state.update({"selected_recipe": row, "nav_origin": "general"})
                         st.rerun()
 
-    elif page == "⚖️ วิเคราะห์ส่วนบุคคล":
-        st.title("⚖️ Personalized Nutrition Analysis")
+    elif page == "🔍 แนะนำเมนูสำหรับคุณ":
+        st.title("🔍 Personalized Nutrition Analysis")
         c1, c2, c3 = st.columns(3)
         weight = c1.number_input("น้ำหนัก (กก.)", 30.0, 150.0, 65.0)
         height = c2.number_input("ส่วนสูง (ซม.)", 100.0, 220.0, 165.0)
@@ -132,7 +132,7 @@ else:
         
         c4, c5, c6 = st.columns(3)
         gender = c4.selectbox("เพศ", ["หญิง", "ชาย"])
-        activity = c5.selectbox("กิจกรรม", ["น้อย", "ปานกลาง", "มาก"])
+        activity = c5.selectbox("กิจกรรม..🏃", ["น้อย", "ปานกลาง", "มาก"])
         
         if activity == "น้อย":
             st.info("สำหรับคนทำงานออฟฟิศ นั่งเกือบทั้งวัน หรือแทบไม่ได้ออกกำลังกายเลย")
@@ -176,7 +176,7 @@ else:
                     st.image(row['ImURL'] if pd.notna(row['ImURL']) else "https://via.placeholder.com/200", use_container_width=True)
                 with col_m:
                     st.subheader(f"{row['Menu']} ({row['Score']}%)")
-                    st.write(f"🍗 โปรตีน {row['P']:.1f}g | 🥗 คาร์บ {row['C']:.1f}g")
+                    st.write(f"🍗 โปรตีน {row['P']:.1f}g | 🥬 คาร์บ {row['C']:.1f}g")
                     if st.button("วิเคราะห์ละเอียด", key=f"rec_{row['Menu']}"):
                         st.session_state.update({"selected_recipe": row, "nav_origin": "personal"})
                         st.rerun()
