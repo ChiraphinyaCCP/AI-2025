@@ -14,7 +14,7 @@ def load_data():
 
         def get_nutri(s):
             p, f, c, fb, cal = 0, 0, 0, 0, 0
-            items = [i.strip() for i in str(s).split(',')]
+            items = [i.strip() for i in str(s).replace('|', ',').split(',')]
             for it in items:
                 for k, v in nutri_map.items():
                     if k in it:
@@ -50,8 +50,12 @@ if st.session_state.selected_recipe is not None:
     c1, c2 = st.columns([1.2, 1])
     with c1:
         st.image(recipe['ImURL'] if pd.notna(recipe['ImURL']) else "https://via.placeholder.com/600x400", use_container_width=True)
+        
+        # --- ส่วนที่แก้ไข: วัตถุดิบแยกบรรทัดใหม่ ---
         st.subheader("🛒 วัตถุดิบ")
-        st.write(recipe['Ingre'].replace(',', '\n').replace('|', '\n'))
+        ing_list = [i.strip() for i in recipe['Ingre'].replace('|', ',').split(',') if i.strip()]
+        for item in ing_list:
+            st.write(f"• {item}")
     
     with c2:
         st.subheader("📊 สัดส่วนสารอาหารมื้อนี้")
@@ -80,8 +84,15 @@ if st.session_state.selected_recipe is not None:
                 st.info(f"🌿 ใยอาหาร: {recipe['Fib']:.1f}g")
 
     st.divider()
+    
+    # --- ส่วนที่แก้ไข: ขั้นตอนการทำแยกบรรทัดใหม่ ---
     st.subheader("🍳 ขั้นตอนการทำ")
-    st.write(recipe['Step'].replace(',', '\n').replace('|', '\n') if pd.notna(recipe['Step']) else "ไม่มีข้อมูลขั้นตอน")
+    if pd.notna(recipe['Step']):
+        step_list = [s.strip() for s in recipe['Step'].replace('|', ',').split(',') if s.strip()]
+        for idx, step in enumerate(step_list, 1):
+            st.write(f"{idx}. {step}")
+    else:
+        st.write("ไม่มีข้อมูลขั้นตอน")
 
 # ==========================================
 # ส่วนที่ 2 & หน้าหลัก: (Main UI)
@@ -122,17 +133,17 @@ else:
         c4, c5, c6 = st.columns(3)
         gender = c4.selectbox("เพศ", ["หญิง", "ชาย"])
         activity = c5.selectbox("กิจกรรม", ["น้อย", "ปานกลาง", "มาก"])
+        
         if activity == "น้อย":
             st.info("สำหรับคนทำงานออฟฟิศ นั่งเกือบทั้งวัน หรือแทบไม่ได้ออกกำลังกายเลย")
         elif activity == "ปานกลาง":
             st.info("สำหรับคนที่มีการขยับตัวบ่อย หรือออกกำลังกายสัปดาห์ละ 3-5 วัน")
         elif activity == "มาก":
             st.info("สำหรับคนที่ออกกำลังกายหนัก ออกกำลังกายเกือบทุกวัน หรือทำงานที่ต้องใช้แรงกายมาก")
+            
         meal_time = c6.selectbox("เลือกมื้ออาหาร", ["มื้อเช้า", "มื้อกลางวัน", "มื้อเย็น"])
-        
         goal = st.radio("เป้าหมายการกิน:", ["เน้นโปรตีนสมดุล", "คุมน้ำหนัก (Low Carb)", "เน้นไฟเบอร์สูง"], horizontal=True)
 
-        # คำนวณรายมื้อ 30-40-30
         bmr = (10 * weight) + (6.25 * height) - (5 * age) + (5 if gender == "ชาย" else -161)
         tdee = bmr * {"น้อย": 1.2, "ปานกลาง": 1.4, "มาก": 1.7}[activity]
         m_dist = {"มื้อเช้า": 0.3, "มื้อกลางวัน": 0.4, "มื้อเย็น": 0.3}
@@ -150,16 +161,12 @@ else:
 
         df['Score'] = df.apply(calc_score, axis=1)
 
-        # --- ส่วนที่แก้ไข: เปลี่ยน st.info เป็นรูปแบบ List (แบบรูปที่ 2) ---
         with st.container(border=True):
             st.markdown(f"### 🎯 เป้าหมายสำหรับ {meal_time}:")
             st.write(f"* **พลังงาน:** {m_dist[meal_time]*100:.0f}% ของทั้งวัน ({target_cal:.0f} kcal)")
             st.write(f"* **โปรตีน:** 30% ของทั้งวัน ({target_p:.1f} g)")
-            
-            # ปรับ % คาร์บตามตัวเลือกเป้าหมาย
             c_pct = 45 if goal != "คุมน้ำหนัก (Low Carb)" else 20
             st.write(f"* **คาร์โบไฮเดรต:** {c_pct}% ของพลังงานมื้อนี้ ({target_c:.1f} g)")
-        # ------------------------------------------------------------
         
         recom = df.sort_values(by='Score', ascending=False).head(5)
         for _, row in recom.iterrows():
