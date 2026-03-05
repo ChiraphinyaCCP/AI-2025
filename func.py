@@ -2,7 +2,7 @@ import pandas as pd
 
 # 1. โหลดข้อมูลจาก CSV ทั้งสองไฟล์
 df_menu = pd.read_csv('menuu.csv')
-df_nutri = pd.read_csv('Nutrition_Ref.csv')
+df_nutri = pd.read_csv('nutrition.csv')
 
 # เปลี่ยน Nutrition_Ref ให้เป็น Dictionary เพื่อการค้นหาที่เร็วขึ้น
 nutri_dict = df_nutri.set_index('Ingredient').to_dict('index')
